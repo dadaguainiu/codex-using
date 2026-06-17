@@ -1,0 +1,73 @@
+﻿# 操作系统生成文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+ehthumbs.db
+*.swp
+*.swo
+*~
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.suo
+*.sln.docstates
+*.user
+*.userosscache
+*.sln
+vs/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+poetry.lock
+
+# 构建输出
+dist/
+build/
+*.egg-info/
+
+# 日志
+*.log
+
+# 环境文件
+.env
+.env.local
+.env.*.local
+
+# 包管理器
+package-lock.json
+yarn.lock
+.pnp.*
+
+# Java / Maven / Gradle
+target/
+*.class
+*.jar
+*.war
+.gradle/
+
+# Go
+vendor/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# 通用临时文件
+*.tmp
+*.bak
+*.orig
