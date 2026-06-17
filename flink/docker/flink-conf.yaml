@@ -1,0 +1,26 @@
+﻿# ============================================================
+# Flink 配置优化 (实时任务专用)
+# ============================================================
+jobmanager.rpc.address: flink-jobmanager
+jobmanager.memory.process.size: 2g
+taskmanager.memory.process.size: 4g
+taskmanager.numberOfTaskSlots: 4
+parallelism.default: 2
+
+# Checkpoint: 10s 间隔, exactly-once
+state.backend: hashmap
+state.checkpoints.dir: file:/data/paimon/checkpoints
+state.checkpoint-storage: filesystem
+execution.checkpointing.interval: 10s
+execution.checkpointing.mode: EXACTLY_ONCE
+execution.checkpointing.timeout: 60s
+execution.checkpointing.min-pause: 5s
+execution.checkpointing.max-concurrent-checkpoints: 1
+
+# Restart
+restart-strategy: fixed-delay
+restart-strategy.fixed-delay.attempts: 10
+restart-strategy.fixed-delay.delay: 10s
+
+# Web
+web.submit.enable: true

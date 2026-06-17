@@ -1,0 +1,141 @@
+﻿{
+  "version": "1.0",
+  "dashboard_title": "GitHub Trending 实时数据湖大盘",
+  "published": true,
+  "position": {
+    "CHART-1": {
+      "type": "CHART",
+      "id": "stars_trend",
+      "children": [],
+      "meta": {
+        "chartId": 1,
+        "width": 6,
+        "height": 4,
+        "sliceName": "Star 趋势 (小时)"
+      },
+      "parents": ["ROOT_ID"],
+      "col": 0,
+      "row": 0
+    },
+    "CHART-2": {
+      "type": "CHART",
+      "id": "language_dist",
+      "children": [],
+      "meta": {
+        "chartId": 2,
+        "width": 3,
+        "height": 4,
+        "sliceName": "编程语言分布"
+      },
+      "parents": ["ROOT_ID"],
+      "col": 6,
+      "row": 0
+    },
+    "CHART-3": {
+      "type": "CHART",
+      "id": "top_repos",
+      "children": [],
+      "meta": {
+        "chartId": 3,
+        "width": 3,
+        "height": 4,
+        "sliceName": "仓库排行"
+      },
+      "parents": ["ROOT_ID"],
+      "col": 9,
+      "row": 0
+    },
+    "CHART-4": {
+      "type": "CHART",
+      "id": "global_metrics",
+      "children": [],
+      "meta": {
+        "chartId": 4,
+        "width": 4,
+        "height": 3,
+        "sliceName": "全局指标"
+      },
+      "parents": ["ROOT_ID"],
+      "col": 0,
+      "row": 4
+    },
+    "CHART-5": {
+      "type": "CHART",
+      "id": "redis_cache_hit",
+      "children": [],
+      "meta": {
+        "chartId": 5,
+        "width": 4,
+        "height": 3,
+        "sliceName": "Redis 缓存命中率"
+      },
+      "parents": ["ROOT_ID"],
+      "col": 4,
+      "row": 4
+    },
+    "ROOT_ID": {
+      "type": "GRID",
+      "children": []
+    }
+  },
+  "dashboards": [
+    {
+      "id": 1,
+      "dashboard_title": "GitHub Trending 实时数据湖大盘",
+      "slug": "github-trending-lakehouse"
+    }
+  ],
+  "charts": [
+    {
+      "id": 1,
+      "slice_name": "Star 趋势 (小时)",
+      "viz_type": "echarts_timeseries_line",
+      "params": {
+        "datasource": "dws_repo_hourly_agg",
+        "metrics": ["stars_increment"],
+        "time_range": "Last 7 days",
+        "groupby": ["language"]
+      }
+    },
+    {
+      "id": 2,
+      "slice_name": "编程语言分布",
+      "viz_type": "pie",
+      "params": {
+        "datasource": "ads_language_trend_1d",
+        "metrics": ["total_stars"],
+        "groupby": ["language"]
+      }
+    },
+    {
+      "id": 3,
+      "slice_name": "仓库排行",
+      "viz_type": "table",
+      "params": {
+        "datasource": "dws_repo_hourly_agg",
+        "metrics": ["current_stars", "stars_increment"],
+        "groupby": ["repo_name", "language"],
+        "order_by": "current_stars",
+        "row_limit": 100
+      }
+    },
+    {
+      "id": 4,
+      "slice_name": "全局指标",
+      "viz_type": "big_number_total",
+      "params": {
+        "datasource": "ads_global_metrics_1d",
+        "metrics": ["total_stars_added"]
+      }
+    },
+    {
+      "id": 5,
+      "slice_name": "Redis 缓存命中率",
+      "viz_type": "gauge",
+      "params": {
+        "datasource": "ads_global_metrics_1d",
+        "metrics": ["avg_daily_stars"]
+      }
+    }
+  ]
+}

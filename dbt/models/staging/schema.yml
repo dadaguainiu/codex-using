@@ -1,0 +1,32 @@
+﻿version: 2
+
+sources:
+  - name: ods
+    database: paimon_catalog
+    schema: ods
+    tables:
+      - name: ods_trending_raw
+        description: "GitHub Trending 原始数据"
+
+  - name: dwd
+    database: paimon_catalog
+    schema: dwd
+    tables:
+      - name: dwd_repo_snapshot_di
+        description: "仓库每日快照"
+
+models:
+  - name: stg_repo_daily
+    description: "仓库日增量 staging 表"
+    columns:
+      - name: repo_id
+        tests: [not_null]
+      - name: snapshot_date
+        tests: [not_null]
+      - name: repo_id
+        tests:
+          - unique
+      - name: stars
+        tests:
+          - accepted_range:
+              min_value: 0

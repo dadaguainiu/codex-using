@@ -1,0 +1,26 @@
+﻿name: github_trending_lakehouse
+version: 1.0.0
+config-version: 2
+
+profile: github_trending
+
+model-paths:
+  - models/starrocks
+  - models/staging
+  - models/marts
+
+seed-paths:
+  - seeds
+
+test-paths:
+  - tests
+
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+vars:
+  source_schema: ods
+  staging_schema: staging
+  marts_schema: marts

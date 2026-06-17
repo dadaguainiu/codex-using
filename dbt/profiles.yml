@@ -1,0 +1,11 @@
+﻿github_trending:
+  target: prod
+  outputs:
+    prod:
+      type: mysql
+      server: starrocks-fe
+      port: 9030
+      schema: ads
+      username: root
+      password: ""
+      driver: com.mysql.cj.jdbc.Driver

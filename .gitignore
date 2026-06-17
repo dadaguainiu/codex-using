@@ -71,3 +71,56 @@ vendor/
 *.tmp
 *.bak
 *.orig
+
+# ============================================================
+# GitHub Trending Lakehouse 专属
+# ============================================================
+
+# Data & local volumes
+paimon/
+*.csv
+*.parquet
+*.avro
+
+# Docker
+docker-compose.override.yml
+
+# Python
+*.pyc
+__pycache__/
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Airflow
+airflow/logs/
+airflow/airflow.cfg
+airflow/airflow.db
+airflow/webserver_config.py
+
+# Superset
+superset/__pycache__/
+superset/static/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Secrets
+.env
+*.pem
+*.key
+config.yaml

@@ -1,0 +1,156 @@
+﻿# ============================================================
+# GitHub Trending 实时数据湖平台 - Docker Compose
+# 技术栈: Kafka + Flink + Paimon + StarRocks + Redis + dbt + Airflow + Superset
+# ============================================================
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: gh-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: metadata
+    ports: ["3306:3306"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [lakehouse]
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: gh-kafka
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports: ["9092:9092"]
+    volumes: [kafka_data:/bitnami/kafka]
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [lakehouse]
+
+  flink-jobmanager:
+    image: flink:1.19-scala_2.12
+    container_name: gh-flink-jm
+    ports: ["8081:8081"]
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+    volumes:
+      - ./paimon:/data/paimon
+      - ./flink/sql:/opt/flink/sql
+      - ./flink/docker/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    networks: [lakehouse]
+
+  flink-taskmanager:
+    image: flink:1.19-scala_2.12
+    container_name: gh-flink-tm
+    command: taskmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+    volumes:
+      - ./paimon:/data/paimon
+      - ./flink/docker/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    depends_on: [flink-jobmanager]
+    networks: [lakehouse]
+
+  starrocks-fe:
+    image: starrocks/fe:3.3-ubuntu
+    container_name: gh-sr-fe
+    ports: ["9030:9030", "8030:8030"]
+    volumes:
+      - sr_fe_data:/opt/starrocks/fe/meta
+      - ./starrocks/sql/init_ads.sql:/opt/starrocks/init.sql
+    healthcheck:
+      test: ["CMD", "mysql", "-P9030", "-h127.0.0.1", "-uroot", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [lakehouse]
+
+  starrocks-be:
+    image: starrocks/be:3.3-ubuntu
+    container_name: gh-sr-be
+    ports: ["8040:8040"]
+    environment:
+      FE_SERVICE: starrocks-fe:9020
+    volumes: [sr_be_data:/opt/starrocks/be/storage]
+    depends_on: [starrocks-fe]
+    networks: [lakehouse]
+
+  redis:
+    image: redis:7-alpine
+    container_name: gh-redis
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [lakehouse]
+
+  airflow-postgres:
+    image: postgres:15
+    container_name: gh-airflow-pg
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes: [airflow_pg_data:/var/lib/postgresql/data]
+    networks: [lakehouse]
+
+  airflow:
+    image: apache/airflow:2.10-python3.11
+    container_name: gh-airflow
+    ports: ["8082:8080"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./dbt:/opt/airflow/dbt
+      - ./scripts:/opt/airflow/scripts
+    entrypoint: >
+      sh -c "airflow db init && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com && airflow scheduler & airflow webserver"
+    depends_on: [airflow-postgres]
+    networks: [lakehouse]
+
+  superset:
+    image: apache/superset:4.0.1
+    container_name: gh-superset
+    ports: ["8088:8088"]
+    environment:
+      SUPERSET_SECRET_KEY: gh-lakehouse-secret-key-2026
+    volumes:
+      - ./superset/dashboard_config.json:/app/superset/dashboard_config.json
+    entrypoint: >
+      sh -c "superset fab create-admin --username admin --password admin --firstname Admin --lastname User --email admin@superset.com && superset db upgrade && superset init && superset run -p 8088 --with-threads"
+    networks: [lakehouse]
+
+volumes:
+  mysql_data:
+  kafka_data:
+  sr_fe_data:
+  sr_be_data:
+  airflow_pg_data:
+
+networks:
+  lakehouse:
+    driver: bridge

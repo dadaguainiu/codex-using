@@ -1,0 +1,68 @@
+﻿# ============================================================
+# GitHub Trending 实时数据湖 - 数据血缘
+# ============================================================
+# 格式: source_table -> target_table (relation_type)
+
+version: 1.0
+updated_at: 2026-06-18
+
+lineage:
+  # ODS -> DWD: 实时流去重加工
+  - source: ods.ods_trending_raw
+    target: dwd.dwd_repo_snapshot_di
+    relation: ETL
+    description: Flink SQL CDC: JSON 解析 + 按时间窗口去重
+    fields:
+      - repo_id -> repo_id
+      - repo_name -> repo_name
+      - stars -> stars
+      - forks -> forks
+      - language -> primary_language
+      - _insert_time -> etl_time
+
+  - source: ods.ods_trending_raw
+    target: dwd.dwd_repo_stars_changelog_di
+    relation: ETL
+    description: Flink SQL: stars 变更流水
+    fields:
+      - repo_id -> repo_id
+      - stars -> stars_after
+
+  # DIM 层: 从 ODS 和 DWD 提取维度
+  - source: ods.ods_trending_raw
+    target: dim.dim_repo
+    relation: ETL
+    description: dbt: 仓库维度提取 (SCD Type 1)
+
+  - source: ods.ods_trending_raw
+    target: dim.dim_language
+    relation: ETL
+    description: dbt: 编程语言维度提取
+
+  # DWD -> DWS: 聚合
+  - source: dwd.dwd_repo_snapshot_di
+    target: dws.dws_repo_daily_agg
+    relation: ETL
+    description: Flink SQL: 按日聚合
+
+  - source: ods.ods_trending_raw
+    target: dws.dws_repo_hourly_agg
+    relation: ETL
+    description: Flink JDBC: 小时级写入 StarRocks
+
+  # DWS -> ADS
+  - source: dws.dws_repo_daily_agg
+    target: ads.ads_language_trend_1d
+    relation: ETL
+    description: dbt: 语言热度聚合
+
+  - source: dws.dws_repo_hourly_agg
+    target: ads.ads_global_metrics_1d
+    relation: ETL
+    description: dbt: 全局指标聚合
+
+  # 跨 Catalog 血缘
+  - source: paimon_catalog.ods.ods_trending_raw
+    target: starrocks.dws.dws_repo_hourly_agg
+    relation: ETL
+    description: Flink JDBC Sink: Paimon -> StarRocks 热加速
