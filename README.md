@@ -1,6 +1,6 @@
 ﻿# GitHub Trending 实时数据湖平台
 
-> 简历级项目 | 技术栈: Kafka + Flink + Paimon + StarRocks + Redis + dbt + Airflow + Superset
+> 简历级项目 | 技术栈: Kafka + Flink + Paimon + StarRocks + Redis + dbt + DolphinScheduler + Superset
 
 ## 项目定位
 
@@ -8,14 +8,14 @@
 
 ## 架构概览
 
-```
+`
 采集层: Python 爬虫 (5min 轮询) -> Kafka
 流计算: Flink SQL -> Paimon (ODS/DWD/DIM/DWS)
 热加速: StarRocks (PK 模型) + Redis (Top 100 缓存)
-批量建模: dbt + Airflow (日调度)
+批量建模: dbt + DolphinScheduler (日调度)
 可视化: Apache Superset
 治理: Atlas + lineage.yml + 质量监控
-```
+`
 
 ## 冷热数据分离
 
@@ -32,7 +32,7 @@
 
 ## 目录结构
 
-```
+`
 .
 |-- docker-compose.yml          # 一键部署
 |-- mysql/init.sql              # 元数据初始化
@@ -44,39 +44,44 @@
 |   +-- docker/flink-conf.yaml  # Flink 配置
 |-- starrocks/sql/init_ads.sql  # StarRocks 表初始化
 |-- dbt/                        # 数据建模
-|-- airflow/dags/               # 调度 DAG
+|-- dolphinscheduler/           # 调度工作流配置
 |-- superset/dashboard_config.json
 |-- lineage.yml                 # 数据血缘
 +-- docs/                       # 设计文档
-```
+`
 
 ## 快速启动
 
-```bash
+`ash
 # 1. 启动所有服务
 docker compose up -d
 
 # 2. 等待 all services healthy 后, 初始化 StarRocks 表
-docker exec -i gh-sr-fe mysql -h127.0.0.1 -P9030 -uroot < starrocks/sql/init_ads.sql
+docker exec -i gh-sr mysql -h127.0.0.1 -P9030 -uroot < starrocks/sql/init_ads.sql
 
 # 3. 提交 Flink SQL 作业
 docker exec -i gh-flink-jm flink run -d -py /opt/flink/sql/01_setup_paimon_catalog.sql
 
-# 4. 配置 Superset
-#    打开 http://localhost:8088 (admin/admin)
-#    添加 StarRocks 数据源: jdbc:mysql://starrocks-fe:9030
+# 4. 配置 DolphinScheduler 工作流
+#    打开 http://localhost:12345 (admin/dolphinscheduler123)
+#    参考 dolphinscheduler/README.md 配置 dbt 调度和数据质量检查
 
-# 5. 访问可视化
+# 5. 配置 Superset
+#    打开 http://localhost:8088 (admin/admin)
+#    添加 StarRocks 数据源: jdbc:mysql://gh-sr:9030
+
+# 6. 访问可视化
 #    Superset: http://localhost:8088
-#    Airflow:  http://localhost:8082 (admin/admin)
+#    DolphinScheduler: http://localhost:12345
 #    Flink UI: http://localhost:8081
-```
+`
 
 ## 访问地址
 
 | 组件 | 地址 | 认证 |
 |------|------|------|
 | Superset | http://localhost:8088 | admin/admin |
-| Airflow | http://localhost:8082 | admin/admin |
+| DolphinScheduler | http://localhost:12345 | admin/dolphinscheduler123 |
 | Flink Web UI | http://localhost:8081 | - |
 | StarRocks SQL | mysql -h127.0.0.1 -P9030 -uroot | - |
+
